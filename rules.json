@@ -1,0 +1,168 @@
+﻿{
+  "rules": [
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "high"},
+          {"variable": "attendance_percentage", "is": "strong"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "high"},
+          {"variable": "attendance_percentage", "is": "average"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "high"},
+          {"variable": "attendance_percentage", "is": "poor"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "medium"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "medium"},
+          {"variable": "attendance_percentage", "is": "strong"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "medium"},
+          {"variable": "attendance_percentage", "is": "average"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "medium"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "medium"},
+          {"variable": "attendance_percentage", "is": "poor"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "low"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "low"},
+          {"variable": "attendance_percentage", "is": "strong"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "medium"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "low"},
+          {"variable": "attendance_percentage", "is": "average"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "low"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "low"},
+          {"variable": "attendance_percentage", "is": "poor"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "low"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "sleep_hours", "is": "passable"},
+          {"variable": "study_hours_per_day", "is": "high"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "sleep_hours", "is": "minimal"},
+          {"variable": "study_hours_per_day", "is": "high"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "medium"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "sleep_hours", "is": "ample"},
+          {"variable": "attendance_percentage", "is": "strong"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "sleep_hours", "is": "minimal"},
+          {"variable": "attendance_percentage", "is": "poor"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "low"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "exercise_frequency", "is": "frequent"},
+          {"variable": "study_hours_per_day", "is": "high"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "exercise_frequency", "is": "infrequent"},
+          {"variable": "sleep_hours", "is": "minimal"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "low"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "exercise_frequency", "is": "regular"},
+          {"variable": "attendance_percentage", "is": "strong"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "medium"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "high"},
+          {"variable": "sleep_hours", "is": "passable"},
+          {"variable": "attendance_percentage", "is": "strong"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "high"}
+    },
+    {
+      "if": {
+        "all": [
+          {"variable": "study_hours_per_day", "is": "low"},
+          {"variable": "sleep_hours", "is": "passable"},
+          {"variable": "attendance_percentage", "is": "poor"}
+        ]
+      },
+      "then": {"variable": "exam_score", "is": "low"}
+    }
+  ]
+}
