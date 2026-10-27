@@ -4,7 +4,12 @@
       "if": {
         "all": [
           {"variable": "study_hours_per_day", "is": "high"},
-          {"variable": "attendance_percentage", "is": "strong"}
+          {
+            "any": [
+              {"variable": "attendance_percentage", "is": "strong"},
+              {"variable": "attendance_percentage", "is": "average"}
+            ]
+          }
         ]
       },
       "then": {"variable": "exam_score", "is": "high"}
@@ -13,15 +18,6 @@
       "if": {
         "all": [
           {"variable": "study_hours_per_day", "is": "high"},
-          {"variable": "attendance_percentage", "is": "average"}
-        ]
-      },
-      "then": {"variable": "exam_score", "is": "high"}
-    },
-    {
-      "if": {
-        "all": [
-          {"variable": "study_hours_per_day", "is": "high"},
           {"variable": "attendance_percentage", "is": "poor"}
         ]
       },
@@ -80,15 +76,6 @@
         ]
       },
       "then": {"variable": "exam_score", "is": "low"}
-    },
-    {
-      "if": {
-        "all": [
-          {"variable": "sleep_hours", "is": "passable"},
-          {"variable": "study_hours_per_day", "is": "high"}
-        ]
-      },
-      "then": {"variable": "exam_score", "is": "high"}
     },
     {
       "if": {
@@ -120,8 +107,13 @@
     {
       "if": {
         "all": [
-          {"variable": "exercise_frequency", "is": "frequent"},
-          {"variable": "study_hours_per_day", "is": "high"}
+          {"variable": "study_hours_per_day", "is": "high"},
+          {
+            "any": [
+              {"variable": "sleep_hours", "is": "passable"},
+              {"variable": "exercise_frequency", "is": "frequent"}
+            ]
+          }
         ]
       },
       "then": {"variable": "exam_score", "is": "high"}
