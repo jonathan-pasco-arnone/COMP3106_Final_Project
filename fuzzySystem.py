@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import pandas as pd
 
 # ==========================
 # 
@@ -9,7 +10,7 @@ from pathlib import Path
 
 # Includes the relevant variable names from the csv as well as their trapezoidal membership function
 # Where "None" just means it extends infinitely in that direction
-DEFAULT_FUZZY_SETS = {
+DEFAULT_FUZZY_ANTECEDENTS = pd.DataFrame({
     "study_hours_per_day": {
         "low":    [0,0,3,4.5],
         "medium": [2,3,4.5,6.5],
@@ -29,7 +30,10 @@ DEFAULT_FUZZY_SETS = {
         "infrequent": [0,0,1.5,3],
         "regular":    [1,2.5,4.5,6.5],
         "frequent":   [3.5,5,None,None]
-    },
+    }
+})
+
+DEFAULT_FUZZY_CONSEQUENCES = pd.DataFrame({
     # Not used as an antecedent in rules.json, so trapezoidal variables are no strictly necessary,
     # but it is a good redundency to have them.
     "exam_score": {
@@ -37,7 +41,7 @@ DEFAULT_FUZZY_SETS = {
         "medium": [50,60,82,90],
         "high":   [72,84,100,100]
     },
-}
+})
 
 # Weight of each score
 DEFAULT_WEIGHTS = {
@@ -116,7 +120,7 @@ def eval_rule(inputs, rule, fuzzy_sets):
 
 # "inputs" refers to the actual discrete values that are being tested against the rules.
 # "fuzzy_sets" refers to the defined set of variables, their fuzzy labels, and trapezoidal function definition
-def run_rules(inputs, rules=DEFAULT_RULES, fuzzy_sets=DEFAULT_FUZZY_SETS):
+def run_rules(inputs, rules=DEFAULT_RULES, fuzzy_sets=DEFAULT_FUZZY_ANTECEDENTS):
     # Holds fuzzy sets and their determined label scores
     conclusions = {}
     for rule in rules:
@@ -130,15 +134,17 @@ def run_rules(inputs, rules=DEFAULT_RULES, fuzzy_sets=DEFAULT_FUZZY_SETS):
         output_scores = conclusions.setdefault(variable, {})
         output_scores[label] = OR([output_scores.get(label, 0.0), score])
 
-    return conclusions
+    # Only convert to pandas df at the end since python dicts are far better (time and space wise) at constant additions
+    # Using pandas dicts for consistency accros inputs and outputs of various overarching funcs
+    return pd.DataFrame(conclusions)
 
 # Determine final score for overarching variable (not labels) through weighted average
 def weighted_final_score(scores, weights=DEFAULT_WEIGHTS):
     conclusions = {}
-    for var, labels in scores.items():
-        conclusions[var] = sum(weights[var][label] * strength for label, strength in labels.items()) / sum(labels.values())
-
-    return conclusions
+    for var, data in scores.items():
+        conclusions[var] = sum(weights[var][label] * strength for label, strength in data.items()) / sum(data)
+    # Panads series since it is just one row (a vector)
+    return pd.Series(conclusions)
 
 # ==========================
 # 
