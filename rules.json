@@ -12,7 +12,7 @@
           }
         ]
       },
-      "then": {"variable": "exam_score", "is": "high"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -21,7 +21,7 @@
           {"variable": "attendance_percentage", "is": "poor"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "medium"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -30,7 +30,7 @@
           {"variable": "attendance_percentage", "is": "strong"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "high"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -39,7 +39,7 @@
           {"variable": "attendance_percentage", "is": "average"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "medium"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -48,7 +48,7 @@
           {"variable": "attendance_percentage", "is": "poor"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "low"}
+      "then": {"variable": "exam_score", "is": "fail"}
     },
     {
       "if": {
@@ -57,7 +57,7 @@
           {"variable": "attendance_percentage", "is": "strong"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "medium"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -66,7 +66,7 @@
           {"variable": "attendance_percentage", "is": "average"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "low"}
+      "then": {"variable": "exam_score", "is": "fail"}
     },
     {
       "if": {
@@ -75,7 +75,7 @@
           {"variable": "attendance_percentage", "is": "poor"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "low"}
+      "then": {"variable": "exam_score", "is": "fail"}
     },
     {
       "if": {
@@ -84,7 +84,7 @@
           {"variable": "study_hours_per_day", "is": "high"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "medium"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -93,7 +93,7 @@
           {"variable": "attendance_percentage", "is": "strong"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "high"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -102,7 +102,7 @@
           {"variable": "attendance_percentage", "is": "poor"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "low"}
+      "then": {"variable": "exam_score", "is": "fail"}
     },
     {
       "if": {
@@ -116,7 +116,7 @@
           }
         ]
       },
-      "then": {"variable": "exam_score", "is": "high"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -125,7 +125,7 @@
           {"variable": "sleep_hours", "is": "minimal"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "low"}
+      "then": {"variable": "exam_score", "is": "fail"}
     },
     {
       "if": {
@@ -134,7 +134,7 @@
           {"variable": "attendance_percentage", "is": "strong"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "medium"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -144,7 +144,7 @@
           {"variable": "attendance_percentage", "is": "strong"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "high"}
+      "then": {"variable": "exam_score", "is": "pass"}
     },
     {
       "if": {
@@ -154,7 +154,7 @@
           {"variable": "attendance_percentage", "is": "poor"}
         ]
       },
-      "then": {"variable": "exam_score", "is": "low"}
+      "then": {"variable": "exam_score", "is": "fail"}
     }
   ]
 }
