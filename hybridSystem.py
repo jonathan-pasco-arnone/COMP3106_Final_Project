@@ -1,38 +1,30 @@
 #!/usr/bin/python3
-# Hybrid Fuzzy + Naive Bayes Classification System
+# Combines fuzzy-rule activation scores with numeric features and classifies them using Gaussian Naive Bayes.
 
 from fuzzySystem import fuzzyExperts
 from naiveBayesSystem import GaussianNaiveBayes
 
 class hybridFuzzyBayes(GaussianNaiveBayes):
-    def __init__(self, training_prems, training_resps, rules=None, fuzzy_features=None):
-        # Determine fuzzy parameters to pass
-        # Need to do this in order to make use of fuzzyExperts' default parameters
-        fuzzy_params = {}
-        if rules is not None:
-            fuzzy_params["rules"] = rules
-        if fuzzy_features is not None:
-            fuzzy_params["fuzzy_features"] = fuzzy_features
-        self.fuzzyExpert = fuzzyExperts(**fuzzy_params)
+    def __init__(self, training_prems, training_resps, rules, fuzzy_features, fuzzy_outputs=None):
+        self.fuzzy_expert = fuzzyExperts(rules, fuzzy_features, fuzzy_outputs)
         
         self.add_fuzzy_features(training_prems)
 
         super().__init__(training_prems, training_resps)
 
+    # Classify using fuzzy scores as additional features
     def classify(self, data_set):
         self.add_fuzzy_features(data_set)
         return super().classify(data_set)
 
-    # Add the fuzzy_pass and fuzzy_fail features
     def add_fuzzy_features(self, data_set):
-        # Retreive fuzzy scores
-        fuzzy_passing_scores = []
-        fuzzy_failing_scores = []
+        fuzzy_scores = {}
         for _, row in data_set.iterrows():
-            cur_scores = self.fuzzyExpert.run_rules(row)
-            fuzzy_passing_scores.append(cur_scores.loc["pass"]["exam_score"])
-            fuzzy_failing_scores.append(cur_scores.loc["fail"]["exam_score"])
+            cur_scores = self.fuzzy_expert.run_rules(row)
+            for resp_var, labels in cur_scores.items():
+                for label, val in labels.items():
+                    feature_name = f"{resp_var}_{label}"
+                    fuzzy_scores.setdefault(feature_name, []).append(val)
 
-        # Add fuzzy scores as additional features
-        data_set["fuzzy_pass"] = fuzzy_passing_scores
-        data_set["fuzzy_fail"] = fuzzy_failing_scores
+        for feature_name, values in fuzzy_scores.items():
+            data_set[feature_name] = values

@@ -1,31 +1,46 @@
 #!/usr/bin/python3
-# Utilizing Gaussian Naive Bayes
+# Implements a Gaussian Naive Bayes classifier for numeric input features and categorical output labels.
+# The model estimates per-class feature distributions from training data and predicts the most likely class.
 import math
 import pandas as pd
 
+# Floor for standard deviation to prevent against 0 or Nan values
+STD_FLOOR = 1e-7
+
 class GaussianNaiveBayes:
     def __init__(self, training_prems, training_resps):
-        # Split data into passes and fails
-        passing_i = training_resps.eq(["pass"], axis="columns").all(axis="columns")
-        failing_i = training_resps.eq(["fail"], axis="columns").all(axis="columns")
-        
-        passing_prems = training_prems.loc[passing_i]
-        passing_resps = training_resps.loc[passing_i]
-    
-        failing_prems = training_prems.loc[failing_i]
-        failing_resps = training_resps.loc[failing_i]
-    
-        # Calculate mean and standard deviations for each variable for both passing and failing sets
-        self.passing_probs = {"mean": {}, "std": {}}
-        self.failing_probs = {"mean": {}, "std": {}}
-        self.prob_pass = len(passing_resps)/(len(passing_resps)+len(failing_resps))
-        
-        for (var, prems_pass), (_, prems_fail) in zip(passing_prems.items(), failing_prems.items()):
-            self.passing_probs["mean"][var] = prems_pass.mean()
-            self.passing_probs["std"][var] = prems_pass.std()
+        # Split data indices based on each possible label
+        resp_label_indices = {}
+        for resp_var, row in training_resps.items():
+            resp_label_indices[resp_var] = {}
+            for i, label in row.items():
+                if label not in resp_label_indices[resp_var]:
+                    resp_label_indices[resp_var][label] = []
+                resp_label_indices[resp_var][label].append(i)
 
-            self.failing_probs["mean"][var] = prems_fail.mean()
-            self.failing_probs["std"][var] = prems_fail.std()
+        # Assemble necessary variables
+        self.means = {}
+        self.stds = {}
+        self.resp_label_probs = {}
+        for resp_var, labels in resp_label_indices.items():
+            self.means[resp_var] = {}
+            self.stds[resp_var] = {}
+            self.resp_label_probs[resp_var] = {}
+
+            # By default, labels are only "Pass" or "Fail"
+            for label, indices in labels.items():
+                data = training_prems.loc[indices]
+
+                # Calculate mean and standard deviations
+                self.means[resp_var][label] = data.mean()
+                
+                # Using ddof=0 changes std formula from dividing by n-1 to use just n
+                # (for the unique case of only 1 training sample)
+                std = data.std(ddof=0).fillna(0)
+                self.stds[resp_var][label] = std.clip(lower=STD_FLOOR)
+
+                # Probability of each classification (within training set)
+                self.resp_label_probs[resp_var][label] = len(indices)/len(training_resps)
         
     # Classify an individual set of inputs to the single output of either pass or fail
     # NOTE: Implementation was made for easy interpretation, not purely optimization of time/space complexity
@@ -33,37 +48,42 @@ class GaussianNaiveBayes:
         if inputs.empty:
             raise ValueError("Cannot classify without any feature variables")
 
-        # Compute probability of each feature belonging to "pass" or "fail"
-        probs = {"pass": {}, "fail": {}}
-        for var, val in inputs.items():
-            # Probability of this val given a pass
-            # P(var == val | pass)
-            probs["pass"][var] = GaussianNaiveBayes.gaussian(val, self.passing_probs["mean"][var], self.passing_probs["std"][var])
+        # Compute probability of each feature belonging to each label/classification (default of "pass" or "fail")
+        ending_decisions = {}
+        for resp_var, labels in self.resp_label_probs.items():
+            ending_probs = {}
+            for label in labels:
+                naive_bayes_prob = 1
 
-            # Probability of this val given a fail
-            # P(var == val | fail)
-            probs["fail"][var] = GaussianNaiveBayes.gaussian(val, self.failing_probs["mean"][var], self.failing_probs["std"][var])
+                # Compute Naive Bayes probabilities for each prem_var
+                for prem_var, val in inputs.items():                    
+                    # Probability of this val given a label
+                    # E.g: P(prem_var == val | pass)
+                    prob = GaussianNaiveBayes.gaussian(val, self.means[resp_var][label][prem_var], self.stds[resp_var][label][prem_var])
+                    
+                    # Naive Bayes assumption that all features are independant given the classification
+                    # E.g: P(X|pass) = P(x1|pass)*P(x2|pass)...*P(xn|pass)
+                    naive_bayes_prob *= prob
 
-        # Naive Bayes assumption that all features are independant give the classification
-        # P(X|pass) = P(x1|pass)*P(x2|pass)...*P(xn|pass)
-        naive_bayes_probs = {"pass": 1, "fail": 1}
-        for prob_pass, prob_fail in zip(probs["pass"].values(), probs["fail"].values()):
-            naive_bayes_probs["pass"] *= prob_pass
-            naive_bayes_probs["fail"] *= prob_fail
+                # Track final probability of each label
+                ending_probs[label] = naive_bayes_prob * self.resp_label_probs[resp_var][label]
+            
+            # Determine label with highest probability
+            ending_decisions[resp_var] = max(ending_probs, key=ending_probs.get)
 
-        # Multiply by prior probability of each class
-        # P(pass)*P(X|pass)
-        ending_probs = {"pass": naive_bayes_probs["pass"]*self.prob_pass,
-                        "fail": naive_bayes_probs["fail"]*(1.0-self.prob_pass)}
-
-        return "pass" if ending_probs["pass"] > ending_probs["fail"] else "fail"
+        return ending_decisions
 
     # Wrapper function to classify each data point individually
     def classify(self, data_set):
-        preds = []
+        preds = {}
         for _, row in data_set.iterrows():
-            preds.append(self.classify_individual(row))
-        return pd.DataFrame({"exam_score": preds}, index=data_set.index)
+            classification = self.classify_individual(row)
+            for resp_var, val in classification.items():
+                if resp_var not in preds:
+                    preds[resp_var] = []
+                preds[resp_var].append(val)
+
+        return pd.DataFrame(preds, index=data_set.index)
 
     # Complex formula for Gaussian probability
     @staticmethod

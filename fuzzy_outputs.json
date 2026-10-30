@@ -1,0 +1,6 @@
+{
+    "exam_score": {
+        "labels": ["pass", "fail"],
+        "cutoff": 50
+    }
+}

@@ -1,57 +1,12 @@
 #!/usr/bin/python3
-import json
-from pathlib import Path
+# Evaluates fuzzy rules using trapezoidal membership functions and classifies inputs from the rule activations.
 import pandas as pd
 
-# ==========================
-# 
-# Default Variables
-# 
-# ==========================
-
-# Includes the relevant variable names from the csv as well as their trapezoidal membership function
-# Where "None" just means it extends infinitely in that direction
-DEFAULT_FUZZY_ANTECEDENTS = pd.DataFrame({
-    "study_hours_per_day": {
-        "low":    [0,0,3,4.5],
-        "medium": [2,3,4.5,6.5],
-        "high":   [4.5,6.5,None,None]
-    },
-    "attendance_percentage": {
-        "poor":    [0,0,55,75],
-        "average": [60,68,88,95],
-        "strong":  [85,92,100,100]
-    },
-    "sleep_hours": {
-        "minimal":  [0,0,4.5,6],
-        "passable": [4,5.5,7.5,9],
-        "ample":    [6.5,8,None,None]
-    },
-    "exercise_frequency": {
-        "infrequent": [0,0,1.5,3],
-        "regular":    [1,2.5,4.5,6.5],
-        "frequent":   [3.5,5,None,None]
-    }
-})
-
-DEFAULT_FUZZY_OUTPUTS = {
-    "exam_score": ("fail", "pass")
-}
-
-# Rules
-with Path(__file__).with_name("rules.json").open(encoding="utf-8-sig") as rules_file:
-    DEFAULT_RULES = json.load(rules_file)["rules"]
-
-# ==========================
-# 
-# Default Variables
-# 
-# ==========================
-
 class fuzzyExperts():
-    def __init__(self, rules=DEFAULT_RULES, fuzzy_features=DEFAULT_FUZZY_ANTECEDENTS):
+    def __init__(self, rules, fuzzy_features, fuzzy_outputs=None):
         self.rules = rules
         self.fuzzy_features = fuzzy_features
+        self.fuzzy_outputs = fuzzy_outputs or {}
 
     # ==========================
     # 
@@ -119,8 +74,11 @@ class fuzzyExperts():
     # "inputs" refers to the actual discrete values that are being tested against the rules.
     # "fuzzy_sets" refers to the defined set of variables, their fuzzy labels, and trapezoidal function definition
     def run_rules(self, inputs):
-        # Holds fuzzy sets and their determined label scores
-        conclusions = {}
+        # Set 0s as default values 
+        conclusions = {
+            resp_var: {label: 0.0 for label in output.get("labels", [])}
+            for resp_var, output in self.fuzzy_outputs.items()
+        }
         for rule in self.rules:
             score = self.eval_rule(inputs, rule["if"])
 
@@ -132,29 +90,28 @@ class fuzzyExperts():
             output_scores = conclusions.setdefault(variable, {})
             output_scores[label] = fuzzyExperts.OR([output_scores.get(label, 0.0), score])
 
-        # Only convert to pandas df at the end since python dicts are far better (time and space wise) at constant additions
-        # Using pandas dicts for consistency accros inputs and outputs of various overarching funcs
-        return pd.DataFrame(conclusions)
+        return conclusions
 
-    # Choose the class with the strongest rule activation (ties classified as fail).
+    # Choose the class with the strongest rule activation.
     def classify_individual(self, inputs):
         scores = self.run_rules(inputs)
         
-        if "exam_score" not in scores:
-            raise ValueError("Fuzzy rule results do not contain exam_score.")
-        
-        strengths = scores["exam_score"]
-        if strengths.empty or strengths.max() <= 0:
-            raise ValueError("No fuzzy rule fired for the provided inputs.")
+        ending_decisions = {}
+        for resp_var, output_scores in scores.items():
+            ending_decisions[resp_var] = max(output_scores, key=output_scores.get)
 
-        return "pass" if strengths.get("pass", 0.0) > strengths.get("fail", 0.0) else "fail"
+        return ending_decisions
 
     def classify(self, data_set):
-        preds = []
+        preds = {}
         for _, row in data_set.iterrows():
-            preds.append(self.classify_individual(row))
+            classification = self.classify_individual(row)
+            for resp_var, val in classification.items():
+                if resp_var not in preds:
+                    preds[resp_var] = []
+                preds[resp_var].append(val)
         # Using index=... to insure row labels are maintained (since they are randomly ordered)
-        return pd.DataFrame({"exam_score": preds}, index=data_set.index)
+        return pd.DataFrame(preds, index=data_set.index)
 
     # ==========================
     # 
