@@ -2,9 +2,9 @@
 # Loads the dataset and fuzzy-system configuration, trains the three classifiers, and compares their accuracy.
 # The pipeline supports multiple output variables, though the current test data uses only exam_score.
 
-from fuzzySystem import fuzzyExperts
-from hybridSystem import hybridFuzzyBayes
-from naiveBayesSystem import GaussianNaiveBayes
+from .fuzzySystem import fuzzyExperts
+from .hybridSystem import hybridFuzzyBayes
+from .naiveBayesSystem import GaussianNaiveBayes
 
 import argparse
 import json
@@ -24,11 +24,11 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 # Fuzzy antecedents JSON includes the relevant variable names from the csv as well as their trapezoidal
 # membership function. Where "null" just means it extends infinitely in that direction
-DEFAULT_FUZZY_ANTECEDENTS = "fuzzy_antecedents.json"
+DEFAULT_FUZZY_ANTECEDENTS = "config/fuzzy_antecedents.json"
 
-DEFAULT_FUZZY_OUTPUTS = "fuzzy_outputs.json"
+DEFAULT_FUZZY_OUTPUTS = "config/fuzzy_outputs.json"
 
-DEFAULT_RULES = "rules.json"
+DEFAULT_RULES = "config/rules.json"
 
 
 # ==========================
@@ -138,6 +138,67 @@ def bar_graph_perf_measure(data):
 
     plt.show()
 
+# Generates synthetic data for each feature based on its provided trapezoidal function (used as ranges)
+def generate_synthetic_dataset(fuzzy_antecedents, fuzzy_outputs, rules, sample_count):
+    premise_vars = {}
+    for variable, fuzzy_sets in fuzzy_antecedents.items():
+        # Collect values that are not None
+        bounds = [
+            value
+            for trapezoid in fuzzy_sets.values()
+            for value in trapezoid
+            if isinstance(value, (int, float))
+        ]
+        if not bounds:
+            raise ValueError(f"Cannot generate synthetic values for \"{variable}\" without numeric bounds.")
+
+        lower_bound, upper_bound = min(bounds), max(bounds)
+        # In the case of trapezoid functions extending infinitely in either direction, divide or multiple by
+        # 2 to determine a lower/upper bound
+        if any(trapezoid[0] is None and trapezoid[1] is None for trapezoid in fuzzy_sets.values()):
+            lower_bound /= 2
+        if any(trapezoid[2] is None and trapezoid[3] is None for trapezoid in fuzzy_sets.values()):
+            upper_bound *= 2
+        if lower_bound == upper_bound:
+            lower_bound /= 2
+            upper_bound /= 2
+
+
+        # Generates random normal distributed data up to with six standard deviations across the range
+        mean = (lower_bound + upper_bound) / 2
+        standard_deviation = (upper_bound - lower_bound) / 6
+        values = []
+        while len(values) < sample_count:
+            value = random.gauss(mean, standard_deviation)
+            if lower_bound <= value <= upper_bound:
+                values.append(value)
+        premise_vars[variable] = values
+
+    premise_vars = pd.DataFrame(premise_vars)
+    synthetic_data = premise_vars.copy()
+    synthetic_labels = fuzzyExperts(rules, fuzzy_antecedents, fuzzy_outputs).classify(premise_vars)
+
+    for variable, output in fuzzy_outputs.items():
+        positive_label, negative_label = output["labels"]
+        cutoff = output["cutoff"]
+        # Use the fuzzy classification as a noisy tendency for generated labels, not guaranteed ground truth
+        margin = max(abs(cutoff) * 0.1, 1.0)
+        # Identify direction of label
+        directions = synthetic_labels[variable].map({
+            positive_label: 1,
+            negative_label: -1,
+        })
+
+        if directions.isna().any():
+            raise ValueError(f"Fuzzy rules for '{variable}' must use the configured output labels.")
+
+        # Map predicted lables to random values while taking into account the directions
+        synthetic_data[variable] = directions.map(
+            lambda direction: random.gauss(cutoff + direction * margin, margin)
+        )
+
+    return synthetic_data
+
 
 # ==========================
 # 
@@ -148,7 +209,12 @@ def bar_graph_perf_measure(data):
 def receive_inputs():
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset",
-                        help="Required CSV file containing all necessary antecedents and consequences.")
+                        nargs="?",
+                        help="CSV file containing all necessary antecedents and consequences.")
+    parser.add_argument("--synthetic", action="store_true",
+                        help="Generate synthetic data instead of reading a CSV dataset.")
+    parser.add_argument("--samples", type=int, default=1000,
+                        help="Number of rows to generate with --synthetic (default: 1000).")
     parser.add_argument("-r", "--rules", default=DEFAULT_RULES,
                         help="Path to JSON file containing fuzzy rules.")
     parser.add_argument("-fa", "--fuzzy_antecedents", default=DEFAULT_FUZZY_ANTECEDENTS,
@@ -160,17 +226,24 @@ def receive_inputs():
                         "Object should be a mapping of conclusion names to a list of 2 labels (E.g. \"pass\""
                         "and \"fail\") and a minimum cutoff point (not inclusive). For example, the cutoff" \
                         "for a passing grade could be 50.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.synthetic and args.dataset:
+        parser.error("provide either a dataset or --synthetic, not both.")
+    if not args.synthetic and not args.dataset:
+        parser.error("a dataset is required unless --synthetic is specified.")
+    if args.synthetic and args.samples < 1:
+        parser.error("--samples must be a positive integer.")
+    return args
 
 def main():
     # Grab parameters from files
     args = receive_inputs()
-    dataset = args.dataset
-    with Path(__file__).with_name(args.rules).open(encoding="utf-8-sig") as rules_file:
+    proj_root = Path(__file__).resolve().parent.parent
+    with (proj_root / args.rules).open(encoding="utf-8-sig") as rules_file:
         rules = json.load(rules_file)["rules"]
-    with Path(__file__).with_name(args.fuzzy_antecedents).open(encoding="utf-8-sig") as fuzzy_antecedents_file:
+    with (proj_root / args.fuzzy_antecedents).open(encoding="utf-8-sig") as fuzzy_antecedents_file:
         fuzzy_antecedents = json.load(fuzzy_antecedents_file)
-    with Path(__file__).with_name(args.fuzzy_outputs).open(encoding="utf-8-sig") as fuzzy_outputs_file:
+    with (proj_root / args.fuzzy_outputs).open(encoding="utf-8-sig") as fuzzy_outputs_file:
         fuzzy_outputs = json.load(fuzzy_outputs_file)
 
     # Validate parameters:
@@ -216,10 +289,18 @@ def main():
 
     
     # Gather data points
-    df = pd.read_csv(
-        dataset,
-        usecols=antecedents + consequences
-    )
+    if args.synthetic:
+        df = generate_synthetic_dataset(
+            fuzzy_antecedents,
+            fuzzy_outputs,
+            rules,
+            args.samples,
+        )
+    else:
+        df = pd.read_csv(
+            args.dataset,
+            usecols=antecedents + consequences
+        )
     premise_vars = df[antecedents]
     response_vars = df[consequences]
     # Map discrete numbers to specific label based on cutoff provided for each fuzzy consequence

@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 # Combines fuzzy-rule activation scores with numeric features and classifies them using Gaussian Naive Bayes.
 
-from fuzzySystem import fuzzyExperts
-from naiveBayesSystem import GaussianNaiveBayes
+from .fuzzySystem import fuzzyExperts
+from .naiveBayesSystem import GaussianNaiveBayes
 
 class hybridFuzzyBayes(GaussianNaiveBayes):
     def __init__(self, training_prems, training_resps, rules, fuzzy_features, fuzzy_outputs=None):
