@@ -1,5 +1,9 @@
 # COMP3106_Final_Project
 
+## Package Installation Steps
+
+...
+
 ## Dataset
 
 Downloaded from [Kaggle](https://www.kaggle.com/datasets/jayaantanaath/student-habits-vs-academic-performance) by Jayanta Nath.
